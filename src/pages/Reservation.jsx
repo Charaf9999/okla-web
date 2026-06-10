@@ -1,13 +1,13 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MapPin, Star, Clock, Users, CalendarCheck, Check, Sparkles, Send, X, Minus, Plus, Search, CalendarRange, Tag } from 'lucide-react'
-import { reservationScript } from '../data'
+import { MapPin, Star, Clock, Users, CalendarCheck, Check, X, Minus, Plus, Search, CalendarRange, Tag } from 'lucide-react'
 import { getTangier, createReservation, getReservations } from '../api'
 import Dish from '../components/Dish'
 import Skeleton from '../components/Skeleton'
 import StatusPill from '../components/StatusPill'
 import RestaurantDetail from '../components/reservation/RestaurantDetail'
 import BookingFlow from '../components/reservation/BookingFlow'
+import Assistant from '../components/reservation/Assistant'
 
 const DATES = ['Auj.', 'Dem.', 'Ven.', 'Sam.', 'Dim.']
 const OLIVE = '#6F8F45', OLIVE_D = '#5E7A39', TER = '#D96C3B', CACAO = '#3A2A1A', SEA = '#A9C7CC', SAFFRON = '#F2B84B'
@@ -22,26 +22,88 @@ function TangierMap({ restaurants, selectedId, highlight, hoveredId, onSelect, o
   return (
     <div className="relative w-full h-full overflow-hidden rounded-2xl" style={{ background: '#EFE6D6', border: '1px solid rgba(58,42,26,.08)' }}>
       <svg viewBox="0 0 640 520" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 w-full h-full">
+        <defs>
+          <linearGradient id="okla-sea" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#7FAEB6" />
+            <stop offset="100%" stopColor={SEA} />
+          </linearGradient>
+          <radialGradient id="okla-sun" cx="78%" cy="6%" r="46%">
+            <stop offset="0%" stopColor="rgba(242,184,75,.30)" />
+            <stop offset="100%" stopColor="rgba(242,184,75,0)" />
+          </radialGradient>
+          <filter id="okla-pinshadow" x="-60%" y="-60%" width="220%" height="220%">
+            <feDropShadow dx="0" dy="3" stdDeviation="2.5" floodColor="#3A2A1A" floodOpacity=".35" />
+          </filter>
+        </defs>
         {/* sea */}
-        <path d="M0 0 H640 V118 C560 150 520 104 440 150 C360 192 300 138 220 172 C150 202 90 156 0 182 Z" fill={SEA} />
-        <path d="M0 182 C90 156 150 202 220 172 C300 138 360 192 440 150 C520 104 560 150 640 118" fill="none" stroke="#8FB3B9" strokeWidth="2" opacity=".6" />
+        <path d="M0 0 H640 V118 C560 150 520 104 440 150 C360 192 300 138 220 172 C150 202 90 156 0 182 Z" fill="url(#okla-sea)" />
+        <rect x="0" y="0" width="640" height="240" fill="url(#okla-sun)" />
+        {/* beach strip along the coastline */}
+        <path d="M0 182 C90 156 150 202 220 172 C300 138 360 192 440 150 C520 104 560 150 640 118" fill="none" stroke="#F0E3C8" strokeWidth="7" opacity=".9" />
+        <path d="M0 182 C90 156 150 202 220 172 C300 138 360 192 440 150 C520 104 560 150 640 118" fill="none" stroke="#8FB3B9" strokeWidth="1.5" opacity=".5" />
         {/* gentle waves */}
-        {[40, 70, 100].map((y, i) => (
-          <path key={i} d={`M${40 + i * 30} ${y} q 16 -7 32 0 t 32 0 t 32 0`} fill="none" stroke="#ffffff" strokeWidth="2" opacity=".35" />
+        {[44, 74, 104].map((y, i) => (
+          <path key={i} d={`M${36 + i * 34} ${y} q 16 -7 32 0 t 32 0 t 32 0`} fill="none" stroke="#ffffff" strokeWidth="2" opacity=".35">
+            <animate attributeName="opacity" values=".2;.45;.2" dur={`${3 + i}s`} repeatCount="indefinite" />
+          </path>
         ))}
+        {/* ferry crossing the bay (SMIL animateMotion + mpath) */}
+        <path id="okla-ferry-path" d="M600 52 C 470 96 330 70 220 116 C 330 80 470 110 600 52" fill="none" />
+        <g opacity=".9">
+          <g>
+            <path d="M-11 0 L11 0 L7 6 L-7 6 Z" fill="#fff" />
+            <rect x="-5" y="-6" width="10" height="6" rx="1.5" fill="#D96C3B" />
+            <path d="M-16 7 q 8 -4 16 0 t 16 0" fill="none" stroke="#fff" strokeWidth="1.5" opacity=".55" />
+            <animateMotion dur="26s" repeatCount="indefinite" rotate="auto">
+              <mpath href="#okla-ferry-path" />
+            </animateMotion>
+          </g>
+        </g>
         {/* port */}
         <rect x="352" y="150" width="46" height="20" rx="3" fill="#cfc2ac" />
         <line x1="362" y1="150" x2="362" y2="132" stroke="#b9a98e" strokeWidth="3" />
         <line x1="378" y1="150" x2="378" y2="130" stroke="#b9a98e" strokeWidth="3" />
+        {/* phare (Cap Malabata) */}
+        <g transform="translate(596,128)">
+          <rect x="-3.5" y="-18" width="7" height="18" fill="#fff" stroke="#C9BBA2" strokeWidth="1" />
+          <rect x="-3.5" y="-12" width="7" height="4" fill="#C94C3D" />
+          <circle cx="0" cy="-20" r="3" fill="#F2B84B">
+            <animate attributeName="opacity" values="1;.25;1" dur="2.4s" repeatCount="indefinite" />
+          </circle>
+        </g>
+        {/* parcs et collines */}
+        <ellipse cx="96" cy="318" rx="62" ry="34" fill="rgba(111,143,69,.16)" />
+        <ellipse cx="118" cy="306" rx="34" ry="18" fill="rgba(111,143,69,.14)" />
+        <ellipse cx="540" cy="400" rx="74" ry="40" fill="rgba(111,143,69,.13)" />
+        <ellipse cx="252" cy="430" rx="50" ry="26" fill="rgba(111,143,69,.10)" />
+        {/* arbres ponctuels */}
+        {[[70, 308], [104, 330], [136, 300], [520, 392], [556, 412], [262, 426]].map(([x, y], i) => (
+          <g key={i} transform={`translate(${x},${y})`}>
+            <circle r="4.5" fill="#88A45C" /><rect x="-1" y="3" width="2" height="5" fill="#9C8B79" />
+          </g>
+        ))}
+        {/* trame bâtie de la Médina */}
+        {[[298, 218], [312, 226], [326, 214], [340, 224], [306, 240], [322, 244], [336, 238], [292, 232]].map(([x, y], i) => (
+          <rect key={i} x={x} y={y} width="11" height="8" rx="1.5" fill="#fff" stroke="#E0D4BE" strokeWidth="1" />
+        ))}
         {/* roads */}
-        {[['M120 230 C 220 250 340 300 360 360','9'],['M150 235 C 250 210 330 210 492 258','7'],['M340 345 C 300 280 280 230 252 182','6']].map(([d, w], i) => (
+        {[['M120 230 C 220 250 340 300 360 360','9'],['M150 235 C 250 210 330 210 492 258','7'],['M340 345 C 300 280 280 230 252 182','6'],['M360 360 C 420 330 460 295 492 258','6']].map(([d, w], i) => (
           <path key={i} d={d} fill="none" stroke="#E0D4BE" strokeWidth={w} strokeLinecap="round" />
         ))}
-        {/* district labels */}
-        {[['Marshan', 110, 195], ['Kasbah', 250, 150], ['Médina', 340, 235], ['Centre-ville', 345, 405], ['Malabata', 505, 305]].map(([t, x, y]) => (
-          <text key={t} x={x} y={y} fontFamily="Poppins, sans-serif" fontSize="13" fontWeight="600" fill="#9C8B79" textAnchor="middle">{t}</text>
+        {[['M120 230 C 220 250 340 300 360 360'],['M150 235 C 250 210 330 210 492 258']].map(([d], i) => (
+          <path key={i} d={d} fill="none" stroke="#fff" strokeWidth="1.4" strokeDasharray="7 8" opacity=".7" />
         ))}
-        <text x="470" y="70" fontFamily="Poppins, sans-serif" fontSize="13" fontWeight="600" fill="#6f9aa1" textAnchor="middle">Baie de Tanger</text>
+        {/* district labels */}
+        {[['Marshan', 110, 195], ['Kasbah', 250, 150], ['Médina', 340, 268], ['Centre-ville', 345, 405], ['Malabata', 505, 305]].map(([t, x, y]) => (
+          <text key={t} x={x} y={y} fontFamily="Poppins, sans-serif" fontSize="13" fontWeight="600" fill="#9C8B79" textAnchor="middle" style={{ letterSpacing: 1.5, textTransform: 'uppercase' }} opacity=".85">{t}</text>
+        ))}
+        <text x="470" y="70" fontFamily="Poppins, sans-serif" fontSize="13" fontWeight="600" fill="#5d8d95" textAnchor="middle" style={{ letterSpacing: 2 }}>BAIE DE TANGER</text>
+        {/* rose des vents */}
+        <g transform="translate(38,470)" opacity=".75">
+          <circle r="15" fill="#fff" stroke="#D8CCB6" strokeWidth="1.5" />
+          <path d="M0 -10 L3.5 3 L0 0.5 L-3.5 3 Z" fill={OLIVE_D} />
+          <text y="-19" fontFamily="Poppins, sans-serif" fontSize="9" fontWeight="700" fill="#9C8B79" textAnchor="middle">N</text>
+        </g>
 
         {/* pins */}
         {restaurants.map(r => {
@@ -58,8 +120,16 @@ function TangierMap({ restaurants, selectedId, highlight, hoveredId, onSelect, o
               {(active || hl) && <circle cx="0" cy="-14" r={active ? 22 : 18} fill={sel ? TER : (hov ? OLIVE : SAFFRON)} opacity=".22">
                 <animate attributeName="r" values={`${active ? 18 : 15};${active ? 24 : 20};${active ? 18 : 15}`} dur="1.8s" repeatCount="indefinite" />
               </circle>}
-              <path d="M0 0 C-9 -10 -14 -16 -14 -24 a14 14 0 0 1 28 0 c0 8 -5 14 -14 24 Z" fill={color} stroke="#fff" strokeWidth="2" transform={scale} style={{ transition: 'transform .18s' }} />
-              <circle cx="0" cy="-24" r="5" fill="#fff" transform={scale} style={{ transition: 'transform .18s' }} />
+              <g filter="url(#okla-pinshadow)">
+                <path d="M0 0 C-9 -10 -14 -16 -14 -24 a14 14 0 0 1 28 0 c0 8 -5 14 -14 24 Z" fill={color} stroke="#fff" strokeWidth="2" transform={scale} style={{ transition: 'transform .18s' }} />
+                <circle cx="0" cy="-24" r="5" fill="#fff" transform={scale} style={{ transition: 'transform .18s' }} />
+              </g>
+              {/* nom du restaurant sous le pin (halo blanc pour la lisibilité) */}
+              <text x="0" y="16" fontFamily="Poppins, sans-serif" fontSize="10.5" fontWeight={active ? 700 : 600}
+                fill={active ? CACAO : '#6A5746'} textAnchor="middle"
+                style={{ paintOrder: 'stroke', stroke: '#FFFDF6', strokeWidth: 3.5, strokeLinejoin: 'round' }}>
+                {r.name}
+              </text>
               {/* badge offre sur le pin */}
               {r.offer && (
                 <g transform={`translate(12,-34) ${active ? 'scale(1.05)' : ''}`}>
@@ -100,69 +170,6 @@ function TangierMap({ restaurants, selectedId, highlight, hoveredId, onSelect, o
         <MapPin size={12} className="inline -mt-0.5 mr-1" color={OLIVE} /> Tanger · {restaurants.length} restaurants
       </div>
     </div>
-  )
-}
-
-/* ---------------- Scripted assistant ---------------- */
-function Assistant({ onAction }) {
-  const [open, setOpen] = useState(false)
-  const [asked, setAsked] = useState([])
-  const [msgs, setMsgs] = useState([{ role: 'bot', text: 'Bonjour ! Je suis l’assistant OKLA. Je peux vous aider à choisir et réserver. Posez-moi une question 👇' }])
-
-  const ask = (item, i) => {
-    setAsked(a => [...a, i])
-    setMsgs(m => [...m, { role: 'user', text: item.q }])
-    setTimeout(() => {
-      setMsgs(m => [...m, { role: 'bot', text: item.a }])
-      onAction(item.action)
-    }, 650)
-  }
-
-  return (
-    <>
-      <motion.button initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: .4, type: 'spring' }}
-        onClick={() => setOpen(o => !o)} className="fixed z-50 grid place-items-center rounded-full text-white"
-        style={{ bottom: 26, right: 26, width: 60, height: 60, background: OLIVE, boxShadow: '0 16px 34px -10px rgba(111,143,69,.7)' }}>
-        <AnimatePresence mode="wait">
-          {open ? <motion.span key="x" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ opacity: 0 }}><X size={24} /></motion.span>
-                : <motion.span key="s" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ opacity: 0 }}><Sparkles size={24} /></motion.span>}
-        </AnimatePresence>
-      </motion.button>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div initial={{ opacity: 0, y: 20, scale: .96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: .96 }}
-            transition={{ duration: .25 }} className="fixed z-50 flex flex-col bg-card rounded-3xl overflow-hidden"
-            style={{ bottom: 100, right: 26, width: 360, maxWidth: 'calc(100vw - 40px)', height: 480, boxShadow: '0 30px 70px -20px rgba(58,42,26,.5)', border: '1px solid rgba(58,42,26,.08)' }}>
-            <div className="flex items-center gap-2.5 px-4 py-3.5" style={{ background: OLIVE }}>
-              <div className="grid place-items-center rounded-xl bg-white/20" style={{ width: 34, height: 34 }}><Sparkles size={18} color="#fff" /></div>
-              <div><div className="font-head font-bold text-white" style={{ fontSize: 14 }}>Assistant OKLA</div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,.8)' }}>● en ligne</div></div>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2.5">
-              {msgs.map((m, i) => (
-                <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={m.role === 'user' ? 'self-end' : 'self-start'}
-                  style={{ maxWidth: '85%', padding: '10px 13px', borderRadius: 15, fontSize: 13.5, lineHeight: 1.45,
-                    background: m.role === 'user' ? TER : '#F1E7D6', color: m.role === 'user' ? '#fff' : CACAO,
-                    borderBottomRightRadius: m.role === 'user' ? 4 : 15, borderBottomLeftRadius: m.role === 'user' ? 15 : 4 }}>
-                  {m.text}
-                </motion.div>
-              ))}
-            </div>
-            <div className="p-3 flex flex-wrap gap-2" style={{ borderTop: '1px solid rgba(58,42,26,.08)' }}>
-              {reservationScript.map((it, i) => !asked.includes(i) && (
-                <button key={i} onClick={() => ask(it, i)} className="font-head rounded-full px-3 py-1.5 transition-colors"
-                  style={{ fontSize: 11.5, fontWeight: 600, color: OLIVE_D, background: 'rgba(111,143,69,.12)' }}>{it.q}</button>
-              ))}
-              <div className="flex items-center gap-2 w-full mt-1">
-                <div className="flex-1 rounded-full px-3.5 py-2 text-muted" style={{ fontSize: 12.5, background: '#fff', border: '1px solid rgba(58,42,26,.1)' }}>Écrire un message…</div>
-                <button className="grid place-items-center rounded-full" style={{ width: 36, height: 36, background: OLIVE }}><Send size={15} color="#fff" /></button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
   )
 }
 
@@ -254,7 +261,15 @@ export default function Reservation() {
     if (!a) return
     if (a.type === 'select') select(a.id)
     if (a.type === 'highlight') { setHighlight(a.ids) }
-    if (a.type === 'prefill') { setSelectedId('t1'); setTime(a.time); setParty(a.party); setHighlight([]) }
+    if (a.type === 'prefill') { setSelectedId(a.id || 't1'); setTime(a.time); setParty(a.party); setHighlight([]) }
+    // L'assistant active le filtre Offres et met les adresses en avant.
+    if (a.type === 'offers') { setOffersOnly(true); setHighlight(a.ids || []) }
+    // Petit budget : tri par prix + mise en avant des adresses abordables.
+    if (a.type === 'budget') { setSortBy('Prix'); setHighlight(a.ids || []) }
+    // Ouvre la fiche détaillée d'un restaurant.
+    if (a.type === 'detail') openDetail(a.id || selectedId)
+    // Ouvre le tiroir « Mes réservations ».
+    if (a.type === 'drawer') openDrawer()
     // L'assistant confirme de bout en bout : ouvre le tunnel en auto-confirmation.
     if (a.type === 'confirm') {
       const cur = list.find(r => r.id === selectedId) || list[0]
@@ -273,8 +288,26 @@ export default function Reservation() {
               style={{ fontSize: 12, letterSpacing: 2, color: OLIVE_D, background: 'rgba(111,143,69,.14)' }}>
               <CalendarCheck size={14} /> RÉSERVATION
             </div>
-            <h1 className="font-head font-extrabold text-cacao" style={{ fontSize: 'clamp(30px,4vw,46px)', letterSpacing: '-1px' }}>Réservez une table à Tanger</h1>
-            <p className="text-muted mt-2" style={{ fontSize: 15 }}>Choisissez un restaurant sur la carte, sélectionnez votre créneau, c’est réservé.</p>
+            <h1 className="font-head font-extrabold text-cacao" style={{ fontSize: 'clamp(30px,4vw,46px)', letterSpacing: '-1px' }}>
+              {'Réservez une table à'.split(' ').map((w, i) => (
+                <motion.span key={i} initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: .08 * i, duration: .5, ease: [0.21, 0.8, 0.32, 1] }}
+                  style={{ display: 'inline-block', marginRight: '0.28em' }}>{w}</motion.span>
+              ))}
+              <motion.span initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: .4, duration: .5, ease: [0.21, 0.8, 0.32, 1] }}
+                style={{ display: 'inline-block', position: 'relative' }}>
+                Tanger
+                <motion.svg viewBox="0 0 140 14" style={{ position: 'absolute', left: 0, bottom: -8, width: '100%', height: 14 }} aria-hidden="true">
+                  <motion.path d="M4 9 C 36 3 76 11 136 5" fill="none" stroke="#F2B84B" strokeWidth="5" strokeLinecap="round"
+                    initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ delay: .75, duration: .55, ease: 'easeOut' }} />
+                </motion.svg>
+              </motion.span>
+            </h1>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: .7, duration: .6 }}
+              className="text-muted mt-3" style={{ fontSize: 15 }}>
+              Choisissez un restaurant sur la carte, sélectionnez votre créneau, c’est réservé.
+            </motion.p>
           </div>
           <div className="flex items-center gap-3">
             <StatusPill />
@@ -447,7 +480,7 @@ export default function Reservation() {
         </div>
       </div>
 
-      <Assistant onAction={onAction} />
+      <Assistant list={list} selectedId={selectedId} party={party} time={time} onAction={onAction} />
 
       {/* fiche détaillée riche */}
       <AnimatePresence>

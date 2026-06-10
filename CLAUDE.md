@@ -57,12 +57,17 @@ warm accent — overusing orange is tiring. When adding UI, default primary acti
 - Marketing `/`: Hero (with live-tracking phone + floating chips), Features, HowItWorks, LiveTracking,
   Chatbot section (with the "LLM conçu/modélisé, non codé" PFE note), Restaurants, CTA, Footer.
 - App `/app`: clickable phone — home → restaurant detail → reserve → live tracking → assistant, with tab bar.
-- Reservation `/reservation`: stylised **Tangier map** with clickable pins + restaurant list + date chips +
-  party stepper + per-restaurant time slots + confirmation modal + a **scripted floating AI assistant**
-  (the green ✨ button). The assistant's tappable questions and their actions live in `reservationScript`
-  in `data.js` (actions: `select`, `prefill`, `highlight`, `confirm`). Keep this working — it's the demo's
-  highlight. To add assistant Q&A, add entries to `reservationScript` and handle the action in
-  `Reservation.jsx`'s `onAction`.
+- Reservation `/reservation`: stylised **Tangier map** (layered sea, beach, parks, médina blocks, animated
+  ferry via SMIL animateMotion+mpath, lighthouse, labeled pins) with clickable pins + restaurant list +
+  date chips + party stepper + per-restaurant time slots + confirmation modal + a **conversational scripted
+  AI assistant** (the green ✨ button). The assistant now accepts FREE-TEXT input in **French AND Moroccan
+  darija** (latin script): `src/assistant/engine.js` normalizes the text, detects the language, matches it
+  to an intent via weighted keywords, and replies in the same language with a word-by-word streaming effect,
+  fake RAG "sources" chips, and a page action (`select`, `prefill`, `highlight`, `offers`, `budget`,
+  `detail`, `drawer`, `confirm` — handled in `Reservation.jsx`'s `onAction`). The chat UI lives in
+  `src/components/reservation/Assistant.jsx`. The questions to type during the recording are listed in
+  `ASSISTANT_QUESTIONS.md`. To add a Q&A: add an intent in `engine.js` (kw FR+darija, fr/da replies,
+  action, sources). Keep this working — it's the demo's highlight. Still NO real LLM.
 
 ## Candidate tasks (the user will pick)
 - Swap the stylised Tangier map for a real **Leaflet + free tiles** map (note: needs internet for tiles).
