@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #2A1D12;
+  background: #FFF4E6;
+  background-image:
+    radial-gradient(1100px 560px at 82% -12%, rgba(242,184,75,.28), transparent 60%),
+    radial-gradient(900px 520px at -12% 12%, rgba(217,108,59,.16), transparent 55%);
+  background-attachment: fixed;
+  overflow-x: hidden;
+}
+/* grain */
+body::before{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:9999; opacity:.035;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+::selection{ background: rgba(217,108,59,.25); }
+.font-head{ font-family:'Poppins',sans-serif; }
+
+/* squelettes de chargement */
+@keyframes okla-pulse { 0%,100%{ opacity:.55 } 50%{ opacity:1 } }
+.okla-skeleton{ animation: okla-pulse 1.2s ease-in-out infinite; }
