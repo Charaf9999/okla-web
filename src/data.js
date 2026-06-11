@@ -30,7 +30,7 @@ export const chatThread = [
 // Repli hors-ligne : doit rester identique au tableau `tangier` de server/data.js.
 export const tangier = [
   {
-    id: 't1', name: 'Le Jardin Marrakech', cuisine: 'Marocaine · Traditionnelle', area: 'Médina',
+    id: 't1', hours: '12:00–15:00 et 19:00–23:30', name: 'Le Jardin Marrakech', cuisine: 'Marocaine · Traditionnelle', area: 'Médina',
     rating: 4.8, reviews: 212, price: '€€', priceLevel: 2, offer: '-20%', availableTonight: true,
     slots: ['19:30','20:00','20:30','21:00'], x: 300, y: 255, from: '#c9622f', to: '#8f4a2a',
     img: '/images/jardin-marrakech.jpg',
@@ -45,7 +45,7 @@ export const tangier = [
     ],
   },
   {
-    id: 't2', name: 'Dar Tajine', cuisine: 'Marocaine · Terroir', area: 'Marshan',
+    id: 't2', hours: '12:30–15:30 et 19:30–23:00', name: 'Dar Tajine', cuisine: 'Marocaine · Terroir', area: 'Marshan',
     rating: 4.6, reviews: 128, price: '€€', priceLevel: 2, offer: null, availableTonight: false,
     slots: ['19:00','20:00','21:30'], x: 150, y: 235, from: '#b9682f', to: '#7d4a26',
     img: '/images/dar-tajine.jpg',
@@ -59,7 +59,7 @@ export const tangier = [
     ],
   },
   {
-    id: 't3', name: 'Saveur de Poisson', cuisine: 'Poisson · Méditerranéenne', area: 'Médina · Port',
+    id: 't3', hours: '12:00–16:00 et 19:00–00:00', name: 'Saveur de Poisson', cuisine: 'Poisson · Méditerranéenne', area: 'Médina · Port',
     rating: 4.7, reviews: 340, price: '€€', priceLevel: 2, offer: '-30%', availableTonight: true,
     slots: ['19:30','20:30','21:00'], x: 372, y: 200, from: '#3f7d86', to: '#2d5a61',
     img: '/images/saveur-poisson.jpg',
@@ -74,7 +74,7 @@ export const tangier = [
     ],
   },
   {
-    id: 't4', name: 'El Morocco Club', cuisine: 'Internationale · Lounge', area: 'Kasbah',
+    id: 't4', hours: '18:00–01:00', name: 'El Morocco Club', cuisine: 'Internationale · Lounge', area: 'Kasbah',
     rating: 4.5, reviews: 96, price: '€€€', priceLevel: 3, offer: null, availableTonight: true,
     slots: ['20:00','20:30','21:30','22:00'], x: 252, y: 182, from: '#6f5a3a', to: '#4a3b25',
     img: '/images/el-morocco.jpg',
@@ -88,7 +88,7 @@ export const tangier = [
     ],
   },
   {
-    id: 't5', name: 'Riad Saveurs', cuisine: 'Méditerranéenne', area: 'Centre-ville',
+    id: 't5', hours: '11:30–15:00 et 19:00–22:30', name: 'Riad Saveurs', cuisine: 'Méditerranéenne', area: 'Centre-ville',
     rating: 4.5, reviews: 110, price: '€€', priceLevel: 2, offer: '-20%', availableTonight: true,
     slots: ['12:30','13:00','19:30','20:00'], x: 340, y: 345, from: '#cf7b3a', to: '#955a2e',
     img: '/images/riad-saveurs.jpg',
@@ -102,7 +102,7 @@ export const tangier = [
     ],
   },
   {
-    id: 't6', name: 'Atlas Grill', cuisine: 'Grillades · Internationale', area: 'Malabata',
+    id: 't6', hours: '12:00–23:30 en continu', name: 'Atlas Grill', cuisine: 'Grillades · Internationale', area: 'Malabata',
     rating: 4.7, reviews: 154, price: '€€', priceLevel: 2, offer: null, availableTonight: false,
     slots: ['19:00','19:30','20:30'], x: 492, y: 258, from: '#7a8a3e', to: '#566127',
     img: '/images/atlas-grill.jpg',

@@ -196,6 +196,16 @@ const INTENTS = [
     },
   },
   {
+    id: 'points', priority: 6,
+    kw: ['combien de points', 'mes points', 'points okla', 'fidelite', 'recompense', 'points dyali', 'ch7al 3andi', 'cadeau'],
+    respond: ({ points }) => ({
+      fr: `Vous avez ${points ?? 450} points OKLA 🏆 Chaque réservation honorée vous rapporte +150 points, et à 1000 points vous gagnez −100 DH sur l'addition. Je vous ouvre votre espace fidélité 📋`,
+      da: `3andek ${points ?? 450} points OKLA 🏆 Kol réservation katjib lik +150 points, w mli twssel l 1000 points kat rbe7 −100 DH. 7ellit lik l'espace fidélité 📋`,
+      action: { type: 'drawer' },
+      sources: ['Compte fidélité · session', 'Barème points OKLA'],
+    }),
+  },
+  {
     id: 'myres', priority: 6,
     kw: ['mes reservations', 'reservations dyali', 'reservation dyali warrini', 'warrini reservations', 'voir mes reservations', 'historique', 'warrini'],
     respond: () => ({

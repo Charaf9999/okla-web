@@ -22,7 +22,8 @@ Tapez les questions **lentement** (ça rend mieux à l'écran). L'effet « le bo
 | 4 | `Des adresses près de la Kasbah ?` | Français | Met en avant El Morocco Club + Saveur de Poisson (pulsation saffron) ✨ |
 | 5 | `Fin nakol l7out mzyan ?` | Darija | Sélectionne Saveur de Poisson près du port 🐟 |
 | 6 | `Confirme ma réservation` | Français | Lance le tunnel de réservation en auto-confirmation → toast + « Mes réservations » 🎉 |
-| 7 | `Choukran bzaf !` | Darija | Remerciement chaleureux en darija 🌿 |
+| 7 | `Ch7al 3andi dyal points ?` | Darija | Annonce le solde de points et ouvre l'espace fidélité 🏆 |
+| 8 | `Choukran bzaf !` | Darija | Remerciement chaleureux en darija 🌿 |
 
 Durée estimée : ~90 secondes — parfait pour la section assistant de la vidéo.
 
@@ -80,6 +81,11 @@ Durée estimée : ~90 secondes — parfait pour la section assistant de la vidé
 - `Confirme ma réservation`
 - `Akkad liya réservation dyali`
 → ouvre le tunnel en auto-confirmation → toast de succès
+
+### Points de fidélité OKLA 🆕
+- `Combien de points OKLA j'ai ?`
+- `Ch7al 3andi dyal points ?`
+→ annonce votre solde, le barème (+150/réservation, 1000 pts = −100 DH) et ouvre l'espace fidélité
 
 ### Mes réservations
 - `Montre-moi mes réservations`

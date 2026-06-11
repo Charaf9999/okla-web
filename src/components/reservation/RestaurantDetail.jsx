@@ -1,9 +1,20 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { X, Star, MapPin, Minus, Plus, Tag } from 'lucide-react'
+import { X, Star, MapPin, Minus, Plus, Tag, Share2, Check, Clock, UtensilsCrossed } from 'lucide-react'
 import Dish from '../Dish'
 
 const OLIVE = '#6F8F45', OLIVE_D = '#5E7A39', TER = '#D96C3B', CACAO = '#3A2A1A', SAFFRON = '#F2B84B'
+
+// Sous-notes par critère, dérivées de la note moyenne (mock déterministe).
+function criteria(rating) {
+  const clamp = (v) => Math.min(5, Math.max(3, Math.round(v * 10) / 10))
+  return [
+    ['Cuisine', clamp(rating + 0.1)],
+    ['Service', clamp(rating - 0.1)],
+    ['Cadre', clamp(rating + 0.05)],
+    ['Qualité-prix', clamp(rating - 0.2)],
+  ]
+}
 
 // Couleur d'avatar déterministe à partir du nom.
 const AV_COLORS = ['#6F8F45', '#D96C3B', '#3f7d86', '#b9682f', '#6f5a3a', '#cf7b3a']
@@ -24,8 +35,11 @@ export default function RestaurantDetail({ restaurant, dates, dateIdx, setDateId
   const [mainIdx, setMainIdx] = useState(0)
   const [party, setParty] = useState(2)
   const [time, setTime] = useState(null)
+  const [copied, setCopied] = useState(false)
   const photos = (r.photos && r.photos.length ? r.photos : [r.img])
   const dist = distribution(r.rating)
+  const crits = criteria(r.rating)
+  const share = () => { setCopied(true); setTimeout(() => setCopied(false), 2000) }
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}
@@ -55,11 +69,23 @@ export default function RestaurantDetail({ restaurant, dates, dateIdx, setDateId
             </div>
 
             <div className="p-5">
-              <div className="font-head font-extrabold text-cacao" style={{ fontSize: 24, letterSpacing: '-.5px' }}>{r.name}</div>
+              <div className="flex items-start justify-between gap-3">
+                <div className="font-head font-extrabold text-cacao" style={{ fontSize: 24, letterSpacing: '-.5px' }}>{r.name}</div>
+                <button onClick={share} className="flex-none inline-flex items-center gap-1.5 font-head font-semibold rounded-xl px-3 py-2 transition-colors"
+                  style={{ fontSize: 12, color: copied ? '#fff' : OLIVE_D, background: copied ? OLIVE : 'rgba(111,143,69,.12)' }}>
+                  {copied ? <Check size={13} /> : <Share2 size={13} />} {copied ? 'Lien copié' : 'Partager'}
+                </button>
+              </div>
               <div className="flex items-center gap-2 flex-wrap text-muted mt-1" style={{ fontSize: 13.5 }}>
                 <span>{r.cuisine}</span>
                 <span className="flex items-center gap-1"><MapPin size={13} color={OLIVE} />{r.area}</span>
                 <span>· {r.price}</span>
+              </div>
+              {/* horaires */}
+              <div className="flex items-center gap-1.5 mt-2" style={{ fontSize: 12.5 }}>
+                <Clock size={13} color={OLIVE} />
+                <span className="font-head font-semibold" style={{ color: OLIVE_D }}>Ouvert aujourd'hui</span>
+                <span className="text-muted">· {r.hours || '12:00–15:00 et 19:00–23:30'}</span>
               </div>
 
               {/* tags */}
@@ -93,6 +119,22 @@ export default function RestaurantDetail({ restaurant, dates, dateIdx, setDateId
                 </div>
               </div>
 
+              {/* notes par critère (façon TheFork) */}
+              <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2.5 bg-white rounded-2xl p-4" style={{ border: '1px solid rgba(58,42,26,.07)' }}>
+                {crits.map(([label, score]) => (
+                  <div key={label}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-head font-semibold text-muted" style={{ fontSize: 11.5 }}>{label}</span>
+                      <span className="font-head font-bold text-cacao" style={{ fontSize: 12 }}>{score}</span>
+                    </div>
+                    <div className="rounded-full overflow-hidden" style={{ height: 6, background: '#EFE6D6' }}>
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${(score / 5) * 100}%` }} transition={{ duration: .7, ease: 'easeOut' }}
+                        style={{ height: '100%', background: OLIVE, borderRadius: 6 }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
               {/* avis */}
               <div className="font-head font-bold text-cacao mt-6 mb-3" style={{ fontSize: 16 }}>Avis des clients</div>
               <div className="flex flex-col gap-3">
@@ -111,16 +153,34 @@ export default function RestaurantDetail({ restaurant, dates, dateIdx, setDateId
                 ))}
               </div>
 
-              {/* menu */}
-              <div className="font-head font-bold text-cacao mt-6 mb-3" style={{ fontSize: 16 }}>Au menu</div>
-              <div className="flex flex-col gap-2">
-                {(r.menu || []).map(([name, price]) => (
-                  <div key={name} className="flex items-center justify-between bg-white rounded-xl px-4 py-3" style={{ border: '1px solid rgba(58,42,26,.07)' }}>
-                    <span className="text-cacao" style={{ fontSize: 13.5 }}>{name}</span>
-                    <span className="font-head font-semibold" style={{ fontSize: 13, color: TER }}>{price}</span>
+              {/* plats incontournables */}
+              <div className="font-head font-bold text-cacao mt-6 mb-3" style={{ fontSize: 16 }}>Plats incontournables</div>
+              <div className="grid grid-cols-3 gap-2.5">
+                {(r.menu || []).slice(0, 3).map(([name, price], i) => (
+                  <div key={name} className="bg-white rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(58,42,26,.07)' }}>
+                    <Dish src={i === 0 ? r.img : undefined} from={r.from} to={r.to} className="relative grid place-items-center" style={{ height: 68 }}>
+                      {i !== 0 && <UtensilsCrossed size={20} color="rgba(255,255,255,.85)" style={{ position: 'relative', zIndex: 1 }} />}
+                      <span className="absolute font-head font-bold rounded-md bg-white/95" style={{ top: 6, right: 6, fontSize: 10, color: TER, padding: '2px 6px', zIndex: 1 }}>{price}</span>
+                    </Dish>
+                    <div className="px-2.5 py-2 font-head font-semibold text-cacao" style={{ fontSize: 11.5, lineHeight: 1.3 }}>{name}</div>
                   </div>
                 ))}
               </div>
+
+              {/* reste du menu */}
+              {(r.menu || []).length > 3 && (
+                <>
+                  <div className="font-head font-bold text-cacao mt-5 mb-3" style={{ fontSize: 14 }}>Et aussi</div>
+                  <div className="flex flex-col gap-2">
+                    {(r.menu || []).slice(3).map(([name, price]) => (
+                      <div key={name} className="flex items-center justify-between bg-white rounded-xl px-4 py-3" style={{ border: '1px solid rgba(58,42,26,.07)' }}>
+                        <span className="text-cacao" style={{ fontSize: 13.5 }}>{name}</span>
+                        <span className="font-head font-semibold" style={{ fontSize: 13, color: TER }}>{price}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </div>
 

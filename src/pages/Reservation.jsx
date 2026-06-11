@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MapPin, Star, Clock, Users, CalendarCheck, Check, X, Minus, Plus, Search, CalendarRange, Tag } from 'lucide-react'
+import { MapPin, Star, Clock, Users, CalendarCheck, Check, X, Minus, Plus, Search, CalendarRange, Tag, Award, Flame } from 'lucide-react'
 import { getTangier, createReservation, getReservations } from '../api'
 import Dish from '../components/Dish'
 import Skeleton from '../components/Skeleton'
@@ -173,6 +173,26 @@ function TangierMap({ restaurants, selectedId, highlight, hoveredId, onSelect, o
   )
 }
 
+/* ---------------- Compteur animé (points OKLA) ---------------- */
+function CountUp({ value }) {
+  const [shown, setShown] = useState(value)
+  useEffect(() => {
+    if (shown === value) return
+    const from = shown, diff = value - from, t0 = performance.now(), dur = 900
+    let raf
+    const tick = (t) => {
+      const p = Math.min(1, (t - t0) / dur)
+      const eased = 1 - Math.pow(1 - p, 3)
+      setShown(Math.round(from + diff * eased))
+      if (p < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value])
+  return <span>{shown.toLocaleString('fr-FR')}</span>
+}
+
 /* ---------------- Page ---------------- */
 export default function Reservation() {
   const [list, setList] = useState([])
@@ -192,6 +212,10 @@ export default function Reservation() {
   const [offersOnly, setOffersOnly] = useState(false)
   const [tonightOnly, setTonightOnly] = useState(false)
   const [sortBy, setSortBy] = useState('Recommandés')
+  const [area, setArea] = useState('Tous')           // filtre quartier
+  const [tagsSel, setTagsSel] = useState([])         // filtre ambiance (tags)
+  const [points, setPoints] = useState(450)          // points OKLA (fidélité, mock)
+  const [pointsFlash, setPointsFlash] = useState(false)
   const [toast, setToast] = useState(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [reservations, setReservations] = useState([])
@@ -209,8 +233,14 @@ export default function Reservation() {
 
   // Familles de cuisine (premier mot avant « · ») pour le filtre.
   const cuisines = useMemo(() => ['Toutes', ...Array.from(new Set(list.map(r => family(r.cuisine))))], [list])
+  // Quartiers (premier segment de `area`) et tags d'ambiance disponibles.
+  const areas = useMemo(() => ['Tous', ...Array.from(new Set(list.map(r => r.area.split('·')[0].trim())))], [list])
+  const allTags = useMemo(() => Array.from(new Set(list.flatMap(r => r.tags || []))).slice(0, 7), [list])
+  const toggleTag = (t) => setTagsSel(ts => ts.includes(t) ? ts.filter(x => x !== t) : [...ts, t])
+  // Restaurants en promotion (bandeau « Offres du moment »).
+  const offers = useMemo(() => list.filter(r => r.offer), [list])
 
-  // Liste filtrée + triée (recherche, cuisine, prix, note, offres, dispo, tri).
+  // Liste filtrée + triée (recherche, cuisine, prix, note, offres, dispo, quartier, ambiance, tri).
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     let r = list.filter(x => {
@@ -219,15 +249,20 @@ export default function Reservation() {
       const okRating = x.rating >= minRating
       const okOffer = !offersOnly || !!x.offer
       const okTonight = !tonightOnly || x.availableTonight
+      const okArea = area === 'Tous' || x.area.split('·')[0].trim() === area
+      const okTags = tagsSel.length === 0 || tagsSel.every(t => (x.tags || []).includes(t))
       const okQ = !q || x.name.toLowerCase().includes(q) || x.cuisine.toLowerCase().includes(q)
         || x.area.toLowerCase().includes(q) || (x.tags || []).some(t => t.toLowerCase().includes(q))
-      return okCuisine && okPrice && okRating && okOffer && okTonight && okQ
+      return okCuisine && okPrice && okRating && okOffer && okTonight && okArea && okTags && okQ
     })
     if (sortBy === 'Note') r = [...r].sort((a, b) => b.rating - a.rating)
     else if (sortBy === 'Prix') r = [...r].sort((a, b) => a.priceLevel - b.priceLevel)
     else r = [...r].sort((a, b) => (b.offer ? 1 : 0) - (a.offer ? 1 : 0) || b.rating - a.rating) // Recommandés
     return r
-  }, [list, query, cuisine, prices, minRating, offersOnly, tonightOnly, sortBy])
+  }, [list, query, cuisine, prices, minRating, offersOnly, tonightOnly, area, tagsSel, sortBy])
+
+  const resetFilters = () => { setQuery(''); setCuisine('Toutes'); setPrices([]); setMinRating(0); setOffersOnly(false); setTonightOnly(false); setArea('Tous'); setTagsSel([]) }
+  const hasFilters = cuisine !== 'Toutes' || prices.length || minRating || offersOnly || tonightOnly || query || area !== 'Tous' || tagsSel.length
 
   const togglePrice = (lvl) => setPrices(p => p.includes(lvl) ? p.filter(x => x !== lvl) : [...p, lvl])
 
@@ -250,10 +285,13 @@ export default function Reservation() {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000) }
 
-  // Persiste une réservation (API + repli) et met à jour la liste « Mes réservations ».
+  // Persiste une réservation (API + repli), met à jour « Mes réservations »
+  // et crédite +150 points OKLA (fidélité, façon Yums de TheFork).
   const persistReservation = useCallback(async (payload) => {
     const res = await createReservation(payload)
     setReservations(prev => [res.data, ...prev.filter(r => r.id !== res.data.id)])
+    setPoints(p => p + 150)
+    setPointsFlash(true); setTimeout(() => setPointsFlash(false), 1600)
     return res
   }, [])
 
@@ -311,6 +349,22 @@ export default function Reservation() {
           </div>
           <div className="flex items-center gap-3">
             <StatusPill />
+            {/* points OKLA (fidélité) */}
+            <motion.div animate={pointsFlash ? { scale: [1, 1.18, 1] } : {}} transition={{ duration: .5 }}
+              className="relative inline-flex items-center gap-2 font-head font-bold rounded-xl px-4 py-2.5"
+              style={{ fontSize: 13.5, color: '#9C6B12', background: 'rgba(242,184,75,.2)', border: '1px solid rgba(242,184,75,.45)' }}>
+              <Award size={16} color="#C98A1B" />
+              <CountUp value={points} /> pts
+              <AnimatePresence>
+                {pointsFlash && (
+                  <motion.span initial={{ opacity: 0, y: 0 }} animate={{ opacity: 1, y: -26 }} exit={{ opacity: 0 }}
+                    transition={{ duration: .9 }} className="absolute left-1/2 -translate-x-1/2 font-head font-bold"
+                    style={{ top: -4, fontSize: 13, color: '#C98A1B', whiteSpace: 'nowrap' }}>
+                    +150
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.div>
             <button onClick={openDrawer} className="inline-flex items-center gap-2 font-head font-semibold rounded-xl px-4 py-2.5 text-white transition-all hover:-translate-y-0.5"
               style={{ fontSize: 13.5, background: OLIVE, boxShadow: '0 12px 26px -12px rgba(111,143,69,.7)' }}>
               <CalendarRange size={16} /> Mes réservations{reservations.length ? ` (${reservations.length})` : ''}
@@ -382,7 +436,59 @@ export default function Reservation() {
               </select>
             </div>
           </div>
+          {/* rangée 2 : quartier + ambiance */}
+          <div className="flex flex-wrap items-center gap-2 mt-2.5 pt-2.5" style={{ borderTop: '1px dashed rgba(58,42,26,.1)' }}>
+            <select value={area} onChange={e => setArea(e.target.value)} className="font-head rounded-xl px-3 py-2 bg-white text-cacao outline-none"
+              style={{ fontSize: 12.5, fontWeight: 600, border: `1px solid ${area !== 'Tous' ? OLIVE : 'rgba(58,42,26,.1)'}` }}>
+              {areas.map(a => <option key={a} value={a}>{a === 'Tous' ? 'Tous quartiers' : a}</option>)}
+            </select>
+            <span className="font-head text-muted px-1" style={{ fontSize: 12 }}>Ambiance</span>
+            {allTags.map(t => {
+              const on = tagsSel.includes(t)
+              return (
+                <button key={t} onClick={() => toggleTag(t)} className="font-head rounded-full px-3 py-1.5 transition-colors"
+                  style={{ fontSize: 11.5, fontWeight: 600, background: on ? OLIVE : '#fff', color: on ? '#fff' : '#6A5746', border: on ? 'none' : '1px solid rgba(58,42,26,.12)' }}>
+                  {t}
+                </button>
+              )
+            })}
+          </div>
         </div>
+
+        {/* bandeau « Offres du moment » (façon Bons plans TheFork) */}
+        {!loading && offers.length > 0 && (
+          <div className="mb-5">
+            <div className="flex items-center gap-2 mb-2.5">
+              <span className="grid place-items-center rounded-lg" style={{ width: 26, height: 26, background: 'rgba(217,108,59,.14)' }}>
+                <Flame size={14} color={TER} />
+              </span>
+              <span className="font-head font-bold text-cacao" style={{ fontSize: 15 }}>Offres du moment</span>
+              <span className="font-head font-semibold rounded-full px-2 py-0.5" style={{ fontSize: 10.5, color: TER, background: 'rgba(217,108,59,.12)' }}>{offers.length}</span>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: 'thin' }}>
+              {offers.map((r, i) => (
+                <motion.button key={r.id} initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: .06 * i }}
+                  whileHover={{ y: -3 }} onClick={() => openDetail(r.id)}
+                  className="flex-none text-left bg-card rounded-2xl overflow-hidden"
+                  style={{ width: 215, border: '1px solid rgba(58,42,26,.08)', boxShadow: '0 10px 24px -16px rgba(58,42,26,.45)' }}>
+                  <Dish src={r.img} from={r.from} to={r.to} className="relative" style={{ height: 92 }}>
+                    <span className="absolute font-head font-bold text-white" style={{ top: 8, left: 8, fontSize: 11.5, background: TER, padding: '3px 9px', borderRadius: 8, zIndex: 1 }}>{r.offer}</span>
+                    <span className="absolute flex items-center gap-1 font-head font-bold rounded-lg bg-white/95" style={{ bottom: 8, right: 8, fontSize: 11, color: CACAO, padding: '3px 7px', zIndex: 1 }}>
+                      <Star size={10} fill={SAFFRON} color={SAFFRON} />{r.rating}
+                    </span>
+                  </Dish>
+                  <div className="px-3 py-2.5">
+                    <div className="font-head font-bold text-cacao truncate" style={{ fontSize: 13 }}>{r.name}</div>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-muted truncate" style={{ fontSize: 11 }}>{r.area}</span>
+                      <span className="font-head font-semibold flex-none" style={{ fontSize: 11, color: OLIVE_D }}>Dès {r.slots[0]} →</span>
+                    </div>
+                  </div>
+                </motion.button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* compteur de résultats */}
         <div className="flex items-center justify-between mb-4">
@@ -390,8 +496,8 @@ export default function Reservation() {
             {loading ? 'Chargement…' : `${filtered.length} restaurant${filtered.length > 1 ? 's' : ''}`}
             <span className="text-muted font-normal"> à Tanger</span>
           </div>
-          {(cuisine !== 'Toutes' || prices.length || minRating || offersOnly || tonightOnly || query) ? (
-            <button onClick={() => { setQuery(''); setCuisine('Toutes'); setPrices([]); setMinRating(0); setOffersOnly(false); setTonightOnly(false) }}
+          {hasFilters ? (
+            <button onClick={resetFilters}
               className="font-head font-semibold transition-colors hover:opacity-80" style={{ fontSize: 12.5, color: TER }}>
               Réinitialiser
             </button>
@@ -462,7 +568,7 @@ export default function Reservation() {
                 </div>
                 <div className="font-head font-bold text-cacao mb-1" style={{ fontSize: 15 }}>Aucun restaurant ne correspond</div>
                 <p className="text-muted mb-4" style={{ fontSize: 13 }}>Élargissez vos critères pour voir plus d’adresses.</p>
-                <button onClick={() => { setQuery(''); setCuisine('Toutes'); setPrices([]); setMinRating(0); setOffersOnly(false); setTonightOnly(false) }}
+                <button onClick={resetFilters}
                   className="font-head font-semibold rounded-xl px-4 py-2.5 text-white" style={{ fontSize: 13, background: OLIVE }}>
                   Réinitialiser les filtres
                 </button>
@@ -480,7 +586,7 @@ export default function Reservation() {
         </div>
       </div>
 
-      <Assistant list={list} selectedId={selectedId} party={party} time={time} onAction={onAction} />
+      <Assistant list={list} selectedId={selectedId} party={party} time={time} points={points} onAction={onAction} />
 
       {/* fiche détaillée riche */}
       <AnimatePresence>
@@ -534,6 +640,27 @@ export default function Reservation() {
                 <span className="text-muted" style={{ fontSize: 12 }}>· session en cours</span>
               </div>
               <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+                {/* carte fidélité */}
+                <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(135deg, rgba(242,184,75,.22), rgba(242,184,75,.08))', border: '1px solid rgba(242,184,75,.4)' }}>
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <span className="grid place-items-center rounded-xl" style={{ width: 36, height: 36, background: 'rgba(242,184,75,.3)' }}>
+                      <Award size={18} color="#C98A1B" />
+                    </span>
+                    <div className="flex-1">
+                      <div className="font-head font-bold text-cacao" style={{ fontSize: 14 }}>Vos points OKLA</div>
+                      <div className="text-muted" style={{ fontSize: 11 }}>+150 points par réservation honorée</div>
+                    </div>
+                    <span className="font-head font-extrabold" style={{ fontSize: 20, color: '#9C6B12' }}><CountUp value={points} /></span>
+                  </div>
+                  <div className="rounded-full overflow-hidden" style={{ height: 7, background: 'rgba(58,42,26,.1)' }}>
+                    <motion.div animate={{ width: `${Math.min(100, (points % 1000) / 10)}%` }} transition={{ duration: .8, ease: 'easeOut' }}
+                      style={{ height: '100%', background: 'linear-gradient(90deg, #F2B84B, #C98A1B)', borderRadius: 7 }} />
+                  </div>
+                  <div className="flex justify-between mt-1.5" style={{ fontSize: 10.5 }}>
+                    <span className="text-muted">{points % 1000} / 1000 pts</span>
+                    <span className="font-head font-semibold" style={{ color: '#9C6B12' }}>1000 pts = −100 DH offerts</span>
+                  </div>
+                </div>
                 {reservations.length === 0 ? (
                   <div className="text-center text-muted py-16 px-6" style={{ fontSize: 13.5, lineHeight: 1.5 }}>
                     Aucune réservation pour l’instant.<br />Confirmez une table pour la voir apparaître ici.

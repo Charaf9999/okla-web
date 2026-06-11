@@ -63,7 +63,7 @@ function TypingDots() {
    On peut TAPER une question en français ou en darija : le moteur (engine.js)
    la reconnaît, répond dans la même langue, affiche ses « sources » (RAG)
    et déclenche l'action correspondante sur la page. Aucun vrai LLM. */
-export default function Assistant({ list, selectedId, party, time, onAction }) {
+export default function Assistant({ list, selectedId, party, time, points, onAction }) {
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState('')
   const [typing, setTyping] = useState(false)
@@ -94,7 +94,7 @@ export default function Assistant({ list, selectedId, party, time, onAction }) {
     setBusy(true)
     setMsgs(m => [...m, { role: 'user', text, done: true }])
     setTyping(true)
-    const res = answer(text, { list, selectedId, party, time })
+    const res = answer(text, { list, selectedId, party, time, points })
     pendingAction.current = res.action
     // Délai « réflexion » puis streaming de la réponse.
     setTimeout(() => {

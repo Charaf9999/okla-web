@@ -68,6 +68,14 @@ warm accent — overusing orange is tiring. When adding UI, default primary acti
   `src/components/reservation/Assistant.jsx`. The questions to type during the recording are listed in
   `ASSISTANT_QUESTIONS.md`. To add a Q&A: add an intent in `engine.js` (kw FR+darija, fr/da replies,
   action, sources). Keep this working — it's the demo's highlight. Still NO real LLM.
+  **TheFork-style layer (June 2026):** the page also has a **Points OKLA loyalty system** (header pill
+  with animated CountUp, +150 per confirmed reservation wired in `persistReservation`, loyalty card with
+  progress bar at the top of the « Mes réservations » drawer, and a `points` intent in the assistant),
+  an **« Offres du moment » horizontal carousel** above the results counter, **quartier + ambiance-tag
+  filters** (second row of the filter bar, `resetFilters` clears everything), and an **enriched
+  RestaurantDetail**: per-criteria rating bars (Cuisine/Service/Cadre/Qualité-prix derived from rating),
+  opening `hours` field (in both data files), a visual « Partager » button, and « Plats incontournables »
+  cards (first 3 menu items). Sort « Recommandés » boosts offers first.
 
 ## Candidate tasks (the user will pick)
 - Swap the stylised Tangier map for a real **Leaflet + free tiles** map (note: needs internet for tiles).
