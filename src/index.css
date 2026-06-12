@@ -24,6 +24,10 @@ body::before{
 ::selection{ background: rgba(217,108,59,.25); }
 .font-head{ font-family:'Poppins',sans-serif; }
 
+/* rangée défilante sans barre de défilement (« À chacun son plat ») */
+.no-scrollbar{ scrollbar-width:none; -ms-overflow-style:none; }
+.no-scrollbar::-webkit-scrollbar{ display:none; }
+
 /* squelettes de chargement */
 @keyframes okla-pulse { 0%,100%{ opacity:.55 } 50%{ opacity:1 } }
 .okla-skeleton{ animation: okla-pulse 1.2s ease-in-out infinite; }

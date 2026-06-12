@@ -37,7 +37,7 @@ export const tangier = [
     photos: ['/images/jardin-marrakech.jpg'],
     description: 'Un patio verdoyant au cœur de la Médina, où les tajines mijotent selon les recettes de la grand-mère. Ambiance feutrée et thé à la menthe à volonté.',
     tags: ['Terrasse', 'Romantique', 'Cuisine locale'],
-    menu: [['Tajine d’agneau aux pruneaux', '90 DH'], ['Pastilla au poulet', '75 DH'], ['Couscous royal', '110 DH'], ['Thé à la menthe', '25 DH']],
+    menu: [['Tajine d’agneau aux pruneaux', '90 DH'], ['Pastilla au poulet', '75 DH'], ['Couscous royal', '110 DH'], ['Briouates au fromage', '45 DH'], ['Thé à la menthe', '25 DH']],
     reviewList: [
       { name: 'Yasmine B.', rating: 5, text: 'Cadre magnifique et tajine d’agneau fondant. On se croirait à Marrakech.', date: 'il y a 2 j' },
       { name: 'Omar T.', rating: 4, text: 'Service attentionné, un peu d’attente mais ça valait le coup.', date: 'il y a 1 sem.' },
@@ -52,7 +52,7 @@ export const tangier = [
     photos: ['/images/dar-tajine.jpg'],
     description: 'Maison de famille perchée à Marshan, spécialiste des tajines du terroir cuits au feu de bois. Vue dégagée et accueil chaleureux.',
     tags: ['Vue mer', 'Familial', 'Authentique'],
-    menu: [['Tajine kefta aux œufs', '70 DH'], ['Tajine poulet citron confit', '80 DH'], ['Harira maison', '30 DH'], ['Cornes de gazelle', '35 DH']],
+    menu: [['Tajine kefta aux œufs', '70 DH'], ['Tajine poulet citron confit', '80 DH'], ['Harira maison', '30 DH'], ['Briouates à la kefta', '40 DH'], ['Cornes de gazelle', '35 DH']],
     reviewList: [
       { name: 'Hicham A.', rating: 5, text: 'Le meilleur tajine kefta de Tanger, sans hésiter.', date: 'il y a 4 j' },
       { name: 'Sofia L.', rating: 4, text: 'Portions généreuses et prix tout doux.', date: 'il y a 2 sem.' },

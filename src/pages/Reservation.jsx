@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MapPin, Star, Clock, Users, CalendarCheck, Check, X, Minus, Plus, Search, CalendarRange, Tag, Award, Flame } from 'lucide-react'
 import { getTangier, createReservation, getReservations } from '../api'
@@ -8,6 +8,7 @@ import StatusPill from '../components/StatusPill'
 import RestaurantDetail from '../components/reservation/RestaurantDetail'
 import BookingFlow from '../components/reservation/BookingFlow'
 import Assistant from '../components/reservation/Assistant'
+import PickYourPlate, { matchesPlate } from '../components/reservation/PickYourPlate'
 
 const DATES = ['Auj.', 'Dem.', 'Ven.', 'Sam.', 'Dim.']
 const OLIVE = '#6F8F45', OLIVE_D = '#5E7A39', TER = '#D96C3B', CACAO = '#3A2A1A', SEA = '#A9C7CC', SAFFRON = '#F2B84B'
@@ -214,6 +215,8 @@ export default function Reservation() {
   const [sortBy, setSortBy] = useState('Recommandés')
   const [area, setArea] = useState('Tous')           // filtre quartier
   const [tagsSel, setTagsSel] = useState([])         // filtre ambiance (tags)
+  const [plate, setPlate] = useState(null)           // catégorie « À chacun son plat »
+  const resultsRef = useRef(null)
   const [points, setPoints] = useState(450)          // points OKLA (fidélité, mock)
   const [pointsFlash, setPointsFlash] = useState(false)
   const [toast, setToast] = useState(null)
@@ -251,18 +254,26 @@ export default function Reservation() {
       const okTonight = !tonightOnly || x.availableTonight
       const okArea = area === 'Tous' || x.area.split('·')[0].trim() === area
       const okTags = tagsSel.length === 0 || tagsSel.every(t => (x.tags || []).includes(t))
+      const okPlate = !plate || matchesPlate(x, plate)
       const okQ = !q || x.name.toLowerCase().includes(q) || x.cuisine.toLowerCase().includes(q)
         || x.area.toLowerCase().includes(q) || (x.tags || []).some(t => t.toLowerCase().includes(q))
-      return okCuisine && okPrice && okRating && okOffer && okTonight && okArea && okTags && okQ
+      return okCuisine && okPrice && okRating && okOffer && okTonight && okArea && okTags && okPlate && okQ
     })
     if (sortBy === 'Note') r = [...r].sort((a, b) => b.rating - a.rating)
     else if (sortBy === 'Prix') r = [...r].sort((a, b) => a.priceLevel - b.priceLevel)
     else r = [...r].sort((a, b) => (b.offer ? 1 : 0) - (a.offer ? 1 : 0) || b.rating - a.rating) // Recommandés
     return r
-  }, [list, query, cuisine, prices, minRating, offersOnly, tonightOnly, area, tagsSel, sortBy])
+  }, [list, query, cuisine, prices, minRating, offersOnly, tonightOnly, area, tagsSel, plate, sortBy])
 
-  const resetFilters = () => { setQuery(''); setCuisine('Toutes'); setPrices([]); setMinRating(0); setOffersOnly(false); setTonightOnly(false); setArea('Tous'); setTagsSel([]) }
-  const hasFilters = cuisine !== 'Toutes' || prices.length || minRating || offersOnly || tonightOnly || query || area !== 'Tous' || tagsSel.length
+  const resetFilters = () => { setQuery(''); setCuisine('Toutes'); setPrices([]); setMinRating(0); setOffersOnly(false); setTonightOnly(false); setArea('Tous'); setTagsSel([]); setPlate(null) }
+  const hasFilters = cuisine !== 'Toutes' || prices.length || minRating || offersOnly || tonightOnly || query || area !== 'Tous' || tagsSel.length || plate
+
+  // Sélection d'une catégorie « À chacun son plat » : re-clic = désactivation.
+  const choosePlate = (id) => {
+    const next = plate === id ? null : id
+    setPlate(next)
+    if (next) requestAnimationFrame(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
 
   const togglePrice = (lvl) => setPrices(p => p.includes(lvl) ? p.filter(x => x !== lvl) : [...p, lvl])
 
@@ -371,6 +382,9 @@ export default function Reservation() {
             </button>
           </div>
         </div>
+
+        {/* « À chacun son plat » — filtres par plat emblématique */}
+        <PickYourPlate active={plate} onPick={choosePlate} />
 
         {/* filter bar */}
         <div className="flex flex-wrap items-center gap-3 mb-6 p-3 bg-card rounded-2xl" style={{ border: '1px solid rgba(58,42,26,.08)' }}>
@@ -491,7 +505,7 @@ export default function Reservation() {
         )}
 
         {/* compteur de résultats */}
-        <div className="flex items-center justify-between mb-4">
+        <div ref={resultsRef} className="flex items-center justify-between mb-4" style={{ scrollMarginTop: 92 }}>
           <div className="font-head font-semibold text-cacao" style={{ fontSize: 14 }}>
             {loading ? 'Chargement…' : `${filtered.length} restaurant${filtered.length > 1 ? 's' : ''}`}
             <span className="text-muted font-normal"> à Tanger</span>
