@@ -98,10 +98,15 @@ export default function BookingFlow({ restaurant, dates, initial = {}, autoConfi
                 </div>
                 <div className="font-head font-semibold text-muted mb-1.5" style={{ fontSize: 12 }}>Créneau</div>
                 <div className="flex flex-wrap gap-2 mb-6">
-                  {(r.slots || []).map(s => (
-                    <button key={s} onClick={() => setTime(s)} className="font-head rounded-xl px-4 py-2.5 transition-all"
-                      style={{ fontSize: 13.5, fontWeight: 600, background: time === s ? OLIVE : '#fff', color: time === s ? '#fff' : '#6A5746', border: time === s ? 'none' : '1px solid rgba(58,42,26,.12)' }}>{s}</button>
-                  ))}
+                  {[...(r.slots || []).map(s => ({ s, full: false })), ...(r.slotsFull || []).map(s => ({ s, full: true }))]
+                    .sort((a, b) => a.s.localeCompare(b.s))
+                    .map(({ s, full }) => full ? (
+                      <span key={s} title="Complet" className="font-head rounded-xl px-4 py-2.5"
+                        style={{ fontSize: 13.5, fontWeight: 600, color: '#B8A893', background: '#F4EDE0', border: '1px dashed rgba(58,42,26,.16)', textDecoration: 'line-through', cursor: 'not-allowed' }}>{s}</span>
+                    ) : (
+                      <button key={s} onClick={() => setTime(s)} className="font-head rounded-xl px-4 py-2.5 transition-all"
+                        style={{ fontSize: 13.5, fontWeight: 600, background: time === s ? OLIVE : '#fff', color: time === s ? '#fff' : '#6A5746', border: time === s ? 'none' : '1px solid rgba(58,42,26,.12)' }}>{s}</button>
+                    ))}
                 </div>
                 <button onClick={() => time && setStep(2)} disabled={!time} className="w-full font-head font-semibold rounded-xl py-3.5 text-white transition-all"
                   style={{ fontSize: 15, background: time ? OLIVE : '#cdbfa8', cursor: time ? 'pointer' : 'not-allowed', boxShadow: time ? '0 14px 28px -12px rgba(111,143,69,.7)' : 'none' }}>

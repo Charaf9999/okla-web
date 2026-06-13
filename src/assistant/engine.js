@@ -93,14 +93,31 @@ const INTENTS = [
   },
   {
     id: 'fish', priority: 6,
-    kw: ['poisson', 'poissons', 'fruits de mer', 'mer fraiche', 'l7out', 'lhout', 'hout', 'crevettes', 'seafood'],
+    kw: ['poisson', 'poissons', 'fruits de mer', 'mer fraiche', 'l7out', 'lhout', 'hout', 'crevettes', 'seafood', 'bon poisson'],
     respond: ({ list }) => {
-      const r = topRated(list, x => /poisson/i.test(x.cuisine)) || list[0]
+      const seafood = [...list].filter(x => /poisson/i.test(x.cuisine)).sort((a, b) => b.rating - a.rating)
+      const [a, b] = seafood.length >= 2 ? seafood : [list[0], list[1]]
       return {
-        fr: `Pour le poisson, la référence à Tanger c'est ${r.name} (${r.rating}★) près du port : poissons frais du jour servis en cinq services. Je vous le montre sur la carte 🐟`,
-        da: `Ila bghiti l7out, ahsan blassa f Tanja hiya ${r.name} (${r.rating}★) 7da lminaa : l7out tari dyal nhar. Warritha lik f lkharita 🐟`,
-        action: { type: 'select', id: r.id },
-        sources: [`Fiche · ${r.name}`, 'Arrivage du jour · port de Tanger'],
+        fr: `Pour le poisson, deux valeurs sûres : ${a.name} (${a.rating}★, ${a.area}) pour ses cinq services de poissons du jour, et ${b.name} (${b.rating}★, ${b.area}) pour sa friture les pieds dans le sable. Je sélectionne le premier sur la carte 🐟`,
+        da: `Ila bghiti l7out, 3andek jouj blayes wa3rin : ${a.name} (${a.rating}★, ${a.area}) w ${b.name} (${b.rating}★, ${b.area}) — l7out tari dyal nhar bjouj. Warrit lik lewwel f lkharita 🐟`,
+        action: { type: 'select', id: a.id },
+        sources: [`Fiche · ${a.name}`, `Fiche · ${b.name}`, 'Arrivage du jour · port de Tanger'],
+      }
+    },
+  },
+  {
+    id: 'seaview', priority: 7,
+    kw: ['vue mer', 'vue sur mer', 'vue sur la mer', 'avec vue', 'face a la mer', 'bord de mer',
+      'lb7er', 'lbhar', '3la lb7er', 'blasa 3la lb7er', 'chi blasa 3la lb7er', 'mtel 3la lb7er'],
+    respond: ({ list }) => {
+      const picks = byTag(list, 'Vue mer')
+      const ids = picks.map(r => r.id)
+      const names = picks.slice(0, 3).map(r => `${r.name} (${r.rating}★)`).join(', ')
+      return {
+        fr: `Avec vue sur la mer, j'ai ${picks.length} adresses pour vous — les mieux notées : ${names}. J'active le filtre « Vue mer » et je surligne les pins 🌊`,
+        da: `B vue 3la lb7er, 3andi ${picks.length} dyal blayes — a7san wa7din : ${names}. Activit lik filtre « Vue mer » w bayyent lik les pins 🌊`,
+        action: { type: 'tag', tag: 'Vue mer', ids },
+        sources: ['Filtre par ambiance · Vue mer', `Fiches restaurants (${picks.length})`],
       }
     },
   },
@@ -108,31 +125,27 @@ const INTENTS = [
     id: 'kasbah', priority: 6,
     kw: ['kasbah', 'pres de la kasbah', 'autour de la kasbah', '9rib', 'qrib', 'medina haute'],
     respond: ({ list }) => {
-      const ids = list.filter(r => /kasbah|port/i.test(r.area)).map(r => r.id)
-      const names = list.filter(r => ids.includes(r.id)).map(r => `${r.name} (${r.rating}★)`).join(' et ')
+      const picks = list.filter(r => /kasbah|port/i.test(r.area))
+      const ids = picks.map(r => r.id)
+      const names = picks.map(r => `${r.name} (${r.rating}★)`).join(', ')
       return {
-        fr: `Près de la Kasbah, deux belles adresses : ${names}. Je les mets en avant sur la carte ✨`,
-        da: `9rib mn la Kasbah, 3andek jouj blayes mzyanin : ${names}. Bayyenthom lik f lkharita ✨`,
+        fr: `Près de la Kasbah et du port, ${ids.length} belles adresses : ${names}. Je les mets en avant sur la carte ✨`,
+        da: `9rib mn la Kasbah w lminaa, 3andek ${ids.length} dyal blayes mzyanin : ${names}. Bayyenthom lik f lkharita ✨`,
         action: { type: 'highlight', ids },
-        sources: ['Recherche géolocalisée · Kasbah', 'Fiches restaurants (2)'],
+        sources: ['Recherche géolocalisée · Kasbah', `Fiches restaurants (${ids.length})`],
       }
     },
   },
   {
     id: 'romantic', priority: 6,
-    kw: ['romantique', 'amoureux', 'couple', 'anniversaire', 'romansi', 'romansiya', 'vue mer', 'vue sur mer', 'lb7er', 'lbhar', 'terrasse'],
-    respond: ({ list, norm }) => {
-      const sea = /vue|mer|lb7er|lbhar/.test(norm)
-      const picks = sea ? byTag(list, 'Vue mer') : byTag(list, 'Romantique')
+    kw: ['romantique', 'amoureux', 'couple', 'anniversaire', 'romansi', 'romansiya', 'terrasse', 'diner aux chandelles'],
+    respond: ({ list }) => {
+      const picks = byTag(list, 'Romantique')
       const ids = (picks.length ? picks : byTag(list, 'Terrasse')).map(r => r.id)
       const names = list.filter(r => ids.includes(r.id)).map(r => r.name).join(', ')
       return {
-        fr: sea
-          ? `Avec vue sur la mer : ${names}. Les deux dominent la baie — parfait au coucher du soleil. Regardez la carte 🌅`
-          : `Pour une soirée romantique, je pense à ${names} : patio aux chandelles et thé à la menthe. Je les surligne sur la carte 🕯️`,
-        da: sea
-          ? `B vue 3la lb7er : ${names}. Bjouj mtellin 3la lkhalij — top f lmghreb dyal chems 🌅`
-          : `Ila bghiti chi blassa romansiya, 3andek ${names} : patio b chmou3 w atay. Bayyenthom lik f lkharita 🕯️`,
+        fr: `Pour une soirée romantique, je pense à ${names} : patios aux chandelles, zellige et thé à la menthe. Je les surligne sur la carte 🕯️`,
+        da: `Ila bghiti chi blassa romansiya, 3andek ${names} : patio b chmou3 w atay. Bayyenthom lik f lkharita 🕯️`,
         action: { type: 'highlight', ids },
         sources: ['Filtre par ambiance · tags', `Fiches restaurants (${ids.length})`],
       }
@@ -148,7 +161,7 @@ const INTENTS = [
         fr: `Bonne nouvelle — ${offs.length} restaurants ont une offre aujourd'hui : ${names}. J'active le filtre « Offres » pour vous 🏷️`,
         da: `Khbar zwin — ${offs.length} dyal restaurants 3andhom promo lyouma : ${names}. Activit lik filtre « Offres » 🏷️`,
         action: { type: 'offers', ids: offs.map(r => r.id) },
-        sources: ['Offres du jour · 10 juin', `Fiches restaurants (${offs.length})`],
+        sources: ['Offres du moment', `Fiches restaurants (${offs.length})`],
       }
     },
   },
@@ -178,7 +191,7 @@ const INTENTS = [
         fr: `C'est tout bon — ${r.name} a de la disponibilité ce soir à ${t} pour ${p} personne${p > 1 ? 's' : ''}. J'ai pré-rempli votre réservation, il ne reste qu'à confirmer ✅`,
         da: `Safi tbarkellah — ${r.name} fiha blassa had lila m3a ${t} l ${p} dyal nas. 3emmert lik réservation, b9a ghir t'confirmé ✅`,
         action: { type: 'prefill', id: r.id, time: t, party: p },
-        sources: [`Disponibilités · ${r.name}`, 'Créneaux du 10 juin'],
+        sources: [`Disponibilités · ${r.name}`, 'Créneaux du jour'],
       }
     },
   },
@@ -220,7 +233,8 @@ const INTENTS = [
     kw: ['menu', 'carte des plats', 'quoi manger', 'plats', 'specialites', 'chno kayn f lmenu', 'ach kayn', 'lmenu'],
     respond: ({ list, selectedId }) => {
       const r = list.find(x => x.id === selectedId) || list[0]
-      const dishes = (r.menu || []).slice(0, 2).map(([n, p]) => `${n} (${p})`).join(', ')
+      const star = (r.menu || []).filter(m => m.star)
+      const dishes = (star.length ? star : r.menu || []).slice(0, 2).map(m => `${m.name} (${m.price})`).join(', ')
       return {
         fr: `Chez ${r.name}, je vous conseille : ${dishes}. J'ouvre la fiche complète avec tout le menu 🍽️`,
         da: `F ${r.name}, kan nsa7ek b : ${dishes}. 7ellit lik la fiche kamla m3a lmenu 🍽️`,
@@ -278,7 +292,9 @@ export const SUGGESTIONS = [
   'Recommande-moi un restaurant marocain',
   'Une table pour 2 ce soir à 20h',
   'Wach kaynin promotions lyouma ?',
+  'Un restaurant avec vue sur la mer ?',
   'Des adresses près de la Kasbah ?',
   'Fin nakol l7out mzyan ?',
+  'Chi blasa 3la lb7er ?',
   'Confirme ma réservation',
 ]

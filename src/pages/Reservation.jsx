@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MapPin, Star, Clock, Users, CalendarCheck, Check, X, Minus, Plus, Search, CalendarRange, Tag, Award, Flame } from 'lucide-react'
 import { getTangier, createReservation, getReservations } from '../api'
-import Dish from '../components/Dish'
+import Dish, { cuisineEmoji } from '../components/Dish'
 import Skeleton from '../components/Skeleton'
 import StatusPill from '../components/StatusPill'
 import RestaurantDetail from '../components/reservation/RestaurantDetail'
@@ -95,7 +95,7 @@ function TangierMap({ restaurants, selectedId, highlight, hoveredId, onSelect, o
           <path key={i} d={d} fill="none" stroke="#fff" strokeWidth="1.4" strokeDasharray="7 8" opacity=".7" />
         ))}
         {/* district labels */}
-        {[['Marshan', 110, 195], ['Kasbah', 250, 150], ['Médina', 340, 268], ['Centre-ville', 345, 405], ['Malabata', 505, 305]].map(([t, x, y]) => (
+        {[['Marshan', 110, 195], ['Kasbah', 250, 150], ['Médina', 340, 268], ['Centre-ville', 345, 405], ['Malabata', 505, 305], ['Iberia', 165, 328]].map(([t, x, y]) => (
           <text key={t} x={x} y={y} fontFamily="Poppins, sans-serif" fontSize="13" fontWeight="600" fill="#9C8B79" textAnchor="middle" style={{ letterSpacing: 1.5, textTransform: 'uppercase' }} opacity=".85">{t}</text>
         ))}
         <text x="470" y="70" fontFamily="Poppins, sans-serif" fontSize="13" fontWeight="600" fill="#5d8d95" textAnchor="middle" style={{ letterSpacing: 2 }}>BAIE DE TANGER</text>
@@ -131,13 +131,16 @@ function TangierMap({ restaurants, selectedId, highlight, hoveredId, onSelect, o
                 style={{ paintOrder: 'stroke', stroke: '#FFFDF6', strokeWidth: 3.5, strokeLinejoin: 'round' }}>
                 {r.name}
               </text>
-              {/* badge offre sur le pin */}
-              {r.offer && (
-                <g transform={`translate(12,-34) ${active ? 'scale(1.05)' : ''}`}>
-                  <rect x="0" y="0" width="34" height="17" rx="8.5" fill={TER} />
-                  <text x="17" y="12" fontFamily="Poppins, sans-serif" fontSize="10" fontWeight="700" fill="#fff" textAnchor="middle">{r.offer}</text>
-                </g>
-              )}
+              {/* badge offre sur le pin (largeur adaptée au texte) */}
+              {r.offer && (() => {
+                const bw = Math.max(34, 12 + r.offer.length * 6.4)
+                return (
+                  <g transform={`translate(12,-34) ${active ? 'scale(1.05)' : ''}`}>
+                    <rect x="0" y="0" width={bw} height="17" rx="8.5" fill={TER} />
+                    <text x={bw / 2} y="12" fontFamily="Poppins, sans-serif" fontSize="10" fontWeight="700" fill="#fff" textAnchor="middle">{r.offer}</text>
+                  </g>
+                )
+              })()}
             </g>
           )
         })}
@@ -147,6 +150,7 @@ function TangierMap({ restaurants, selectedId, highlight, hoveredId, onSelect, o
           <foreignObject x={Math.min(Math.max(mini.x - 95, 6), 640 - 196)} y={Math.max(mini.y - 150, 6)} width="190" height="138">
             <div xmlns="http://www.w3.org/1999/xhtml" style={{ background: '#fff', borderRadius: 14, overflow: 'hidden', boxShadow: '0 16px 36px -12px rgba(58,42,26,.5)', border: '1px solid rgba(58,42,26,.08)', fontFamily: 'Inter, sans-serif' }}>
               <div style={{ position: 'relative', height: 56, background: `radial-gradient(circle at 30% 35%, rgba(242,184,75,.5), transparent 55%), linear-gradient(135deg,${mini.from},${mini.to})` }}>
+                <span style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: 22 }}>{cuisineEmoji(mini.cuisine)}</span>
                 {mini.img && <img src={mini.img} alt="" onError={e => { e.currentTarget.style.display = 'none' }} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />}
                 {mini.offer && <span style={{ position: 'absolute', top: 6, left: 6, background: TER, color: '#fff', fontSize: 9.5, fontWeight: 700, padding: '2px 6px', borderRadius: 6 }}>{mini.offer}</span>}
               </div>
@@ -238,7 +242,8 @@ export default function Reservation() {
   const cuisines = useMemo(() => ['Toutes', ...Array.from(new Set(list.map(r => family(r.cuisine))))], [list])
   // Quartiers (premier segment de `area`) et tags d'ambiance disponibles.
   const areas = useMemo(() => ['Tous', ...Array.from(new Set(list.map(r => r.area.split('·')[0].trim())))], [list])
-  const allTags = useMemo(() => Array.from(new Set(list.flatMap(r => r.tags || []))).slice(0, 7), [list])
+  // Tous les tags d'ambiance présents dans les données (chacun couvre ≥ 2 restaurants).
+  const allTags = useMemo(() => Array.from(new Set(list.flatMap(r => r.tags || []))), [list])
   const toggleTag = (t) => setTagsSel(ts => ts.includes(t) ? ts.filter(x => x !== t) : [...ts, t])
   // Restaurants en promotion (bandeau « Offres du moment »).
   const offers = useMemo(() => list.filter(r => r.offer), [list])
@@ -313,6 +318,8 @@ export default function Reservation() {
     if (a.type === 'prefill') { setSelectedId(a.id || 't1'); setTime(a.time); setParty(a.party); setHighlight([]) }
     // L'assistant active le filtre Offres et met les adresses en avant.
     if (a.type === 'offers') { setOffersOnly(true); setHighlight(a.ids || []) }
+    // L'assistant active un tag d'ambiance (ex. « Vue mer ») et surligne les pins.
+    if (a.type === 'tag') { setTagsSel([a.tag]); setHighlight(a.ids || []) }
     // Petit budget : tri par prix + mise en avant des adresses abordables.
     if (a.type === 'budget') { setSortBy('Prix'); setHighlight(a.ids || []) }
     // Ouvre la fiche détaillée d'un restaurant.
@@ -485,7 +492,7 @@ export default function Reservation() {
                   whileHover={{ y: -3 }} onClick={() => openDetail(r.id)}
                   className="flex-none text-left bg-card rounded-2xl overflow-hidden"
                   style={{ width: 215, border: '1px solid rgba(58,42,26,.08)', boxShadow: '0 10px 24px -16px rgba(58,42,26,.45)' }}>
-                  <Dish src={r.img} from={r.from} to={r.to} className="relative" style={{ height: 92 }}>
+                  <Dish src={r.img} from={r.from} to={r.to} label={cuisineEmoji(r.cuisine)} labelSize={30} className="relative" style={{ height: 92 }}>
                     <span className="absolute font-head font-bold text-white" style={{ top: 8, left: 8, fontSize: 11.5, background: TER, padding: '3px 9px', borderRadius: 8, zIndex: 1 }}>{r.offer}</span>
                     <span className="absolute flex items-center gap-1 font-head font-bold rounded-lg bg-white/95" style={{ bottom: 8, right: 8, fontSize: 11, color: CACAO, padding: '3px 7px', zIndex: 1 }}>
                       <Star size={10} fill={SAFFRON} color={SAFFRON} />{r.rating}
@@ -493,6 +500,7 @@ export default function Reservation() {
                   </Dish>
                   <div className="px-3 py-2.5">
                     <div className="font-head font-bold text-cacao truncate" style={{ fontSize: 13 }}>{r.name}</div>
+                    {r.offerDesc && <div className="truncate font-head font-semibold" style={{ fontSize: 10.5, color: TER, marginTop: 1 }}>{r.offerDesc}</div>}
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-muted truncate" style={{ fontSize: 11 }}>{r.area}</span>
                       <span className="font-head font-semibold flex-none" style={{ fontSize: 11, color: OLIVE_D }}>Dès {r.slots[0]} →</span>
@@ -542,7 +550,7 @@ export default function Reservation() {
                       className="text-left bg-card rounded-2xl overflow-hidden transition-all cursor-pointer"
                       style={{ border: active ? `2px solid ${OLIVE}` : '1px solid rgba(58,42,26,.08)', boxShadow: active ? '0 14px 34px -16px rgba(111,143,69,.6)' : '0 8px 22px -16px rgba(58,42,26,.4)' }}>
                       <div className="flex gap-3 p-3">
-                        <Dish src={r.img} from={r.from} to={r.to} className="rounded-xl flex-none relative" style={{ width: 74, height: 74 }}>
+                        <Dish src={r.img} from={r.from} to={r.to} label={cuisineEmoji(r.cuisine)} labelSize={26} className="rounded-xl flex-none relative" style={{ width: 74, height: 74 }}>
                           {r.offer && <span className="absolute font-head font-bold text-white" style={{ top: 5, left: 5, fontSize: 10, background: TER, padding: '2px 6px', borderRadius: 7, zIndex: 1 }}>{r.offer}</span>}
                         </Dish>
                         <div className="flex-1 min-w-0">

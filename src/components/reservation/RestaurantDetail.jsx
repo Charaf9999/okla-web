@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { X, Star, MapPin, Minus, Plus, Tag, Share2, Check, Clock, UtensilsCrossed } from 'lucide-react'
-import Dish from '../Dish'
+import Dish, { cuisineEmoji } from '../Dish'
+
+// Ordre d'affichage des catégories dans « Et aussi ».
+const CAT_ORDER = ['Entrées', 'Plats', 'Brunch', 'Pâtisseries', 'Desserts', 'Boissons']
 
 const OLIVE = '#6F8F45', OLIVE_D = '#5E7A39', TER = '#D96C3B', CACAO = '#3A2A1A', SAFFRON = '#F2B84B'
 
@@ -57,13 +60,13 @@ export default function RestaurantDetail({ restaurant, dates, dateIdx, setDateId
           {/* colonne contenu (défile) */}
           <div className="overflow-y-auto" style={{ maxHeight: '92vh' }}>
             {/* galerie */}
-            <Dish src={photos[mainIdx]} from={r.from} to={r.to} className="relative" style={{ height: 240 }}>
+            <Dish src={photos[mainIdx]} from={r.from} to={r.to} label={cuisineEmoji(r.cuisine)} labelSize={54} className="relative" style={{ height: 240 }}>
               {r.offer && <span className="absolute font-head font-bold text-white flex items-center gap-1" style={{ top: 16, left: 16, fontSize: 13, background: TER, padding: '5px 11px', borderRadius: 9, zIndex: 1 }}><Tag size={13} /> {r.offer}</span>}
             </Dish>
             <div className="flex gap-2 px-5 pt-3">
               {photos.map((p, i) => (
                 <button key={i} onClick={() => setMainIdx(i)} className="rounded-lg overflow-hidden transition-all" style={{ border: i === mainIdx ? `2px solid ${OLIVE}` : '2px solid transparent' }}>
-                  <Dish src={p} from={r.from} to={r.to} style={{ width: 64, height: 48 }} />
+                  <Dish src={p} from={r.from} to={r.to} label={cuisineEmoji(r.cuisine)} labelSize={18} style={{ width: 64, height: 48 }} />
                 </button>
               ))}
             </div>
@@ -153,34 +156,54 @@ export default function RestaurantDetail({ restaurant, dates, dateIdx, setDateId
                 ))}
               </div>
 
-              {/* plats incontournables */}
-              <div className="font-head font-bold text-cacao mt-6 mb-3" style={{ fontSize: 16 }}>Plats incontournables</div>
-              <div className="grid grid-cols-3 gap-2.5">
-                {(r.menu || []).slice(0, 3).map(([name, price], i) => (
-                  <div key={name} className="bg-white rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(58,42,26,.07)' }}>
-                    <Dish src={i === 0 ? r.img : undefined} from={r.from} to={r.to} className="relative grid place-items-center" style={{ height: 68 }}>
-                      {i !== 0 && <UtensilsCrossed size={20} color="rgba(255,255,255,.85)" style={{ position: 'relative', zIndex: 1 }} />}
-                      <span className="absolute font-head font-bold rounded-md bg-white/95" style={{ top: 6, right: 6, fontSize: 10, color: TER, padding: '2px 6px', zIndex: 1 }}>{price}</span>
-                    </Dish>
-                    <div className="px-2.5 py-2 font-head font-semibold text-cacao" style={{ fontSize: 11.5, lineHeight: 1.3 }}>{name}</div>
-                  </div>
-                ))}
-              </div>
+              {/* plats incontournables (marqués `star` dans le menu) */}
+              {(() => {
+                const stars = (r.menu || []).filter(m => m.star).slice(0, 3)
+                const rest = (r.menu || []).filter(m => !stars.includes(m))
+                return (
+                  <>
+                    <div className="font-head font-bold text-cacao mt-6 mb-3" style={{ fontSize: 16 }}>Plats incontournables</div>
+                    <div className="grid grid-cols-3 gap-2.5">
+                      {stars.map((m, i) => (
+                        <div key={m.name} className="bg-white rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(58,42,26,.07)' }}>
+                          <Dish src={i === 0 ? r.img : undefined} from={r.from} to={r.to} label={i === 0 ? cuisineEmoji(r.cuisine) : undefined} labelSize={22}
+                            className="relative grid place-items-center" style={{ height: 68 }}>
+                            {i !== 0 && <UtensilsCrossed size={20} color="rgba(255,255,255,.85)" style={{ position: 'relative', zIndex: 1 }} />}
+                            <span className="absolute font-head font-bold rounded-md bg-white/95" style={{ top: 6, right: 6, fontSize: 10, color: TER, padding: '2px 6px', zIndex: 1 }}>{m.price}</span>
+                          </Dish>
+                          <div className="px-2.5 pt-2 font-head font-semibold text-cacao" style={{ fontSize: 11.5, lineHeight: 1.3 }}>{m.name}</div>
+                          <div className="px-2.5 pb-2 pt-0.5 text-muted" style={{ fontSize: 10, lineHeight: 1.35 }}>{m.desc}</div>
+                        </div>
+                      ))}
+                    </div>
 
-              {/* reste du menu */}
-              {(r.menu || []).length > 3 && (
-                <>
-                  <div className="font-head font-bold text-cacao mt-5 mb-3" style={{ fontSize: 14 }}>Et aussi</div>
-                  <div className="flex flex-col gap-2">
-                    {(r.menu || []).slice(3).map(([name, price]) => (
-                      <div key={name} className="flex items-center justify-between bg-white rounded-xl px-4 py-3" style={{ border: '1px solid rgba(58,42,26,.07)' }}>
-                        <span className="text-cacao" style={{ fontSize: 13.5 }}>{name}</span>
-                        <span className="font-head font-semibold" style={{ fontSize: 13, color: TER }}>{price}</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
+                    {/* reste du menu, groupé par catégorie */}
+                    {rest.length > 0 && (
+                      <>
+                        <div className="font-head font-bold text-cacao mt-5 mb-3" style={{ fontSize: 14 }}>Et aussi</div>
+                        <div className="flex flex-col gap-3">
+                          {CAT_ORDER.filter(c => rest.some(m => m.cat === c)).map(c => (
+                            <div key={c}>
+                              <div className="font-head font-semibold mb-1.5" style={{ fontSize: 11, letterSpacing: 1.2, color: '#A89884', textTransform: 'uppercase' }}>{c}</div>
+                              <div className="flex flex-col gap-2">
+                                {rest.filter(m => m.cat === c).map(m => (
+                                  <div key={m.name} className="flex items-center justify-between gap-3 bg-white rounded-xl px-4 py-2.5" style={{ border: '1px solid rgba(58,42,26,.07)' }}>
+                                    <div className="min-w-0">
+                                      <div className="text-cacao" style={{ fontSize: 13.5 }}>{m.name}</div>
+                                      <div className="text-muted truncate" style={{ fontSize: 11.5 }}>{m.desc}</div>
+                                    </div>
+                                    <span className="font-head font-semibold flex-none" style={{ fontSize: 13, color: TER }}>{m.price}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </>
+                )
+              })()}
             </div>
           </div>
 
@@ -205,10 +228,15 @@ export default function RestaurantDetail({ restaurant, dates, dateIdx, setDateId
 
             <div className="font-head font-semibold text-muted mb-1.5" style={{ fontSize: 12 }}>Créneau</div>
             <div className="flex flex-wrap gap-1.5 mb-5">
-              {(r.slots || []).map(s => (
-                <button key={s} onClick={() => setTime(s)} className="font-head rounded-lg px-3 py-2 transition-all"
-                  style={{ fontSize: 12.5, fontWeight: 600, background: time === s ? OLIVE : '#fff', color: time === s ? '#fff' : '#6A5746', border: time === s ? 'none' : '1px solid rgba(58,42,26,.12)' }}>{s}</button>
-              ))}
+              {[...(r.slots || []).map(s => ({ s, full: false })), ...(r.slotsFull || []).map(s => ({ s, full: true }))]
+                .sort((a, b) => a.s.localeCompare(b.s))
+                .map(({ s, full }) => full ? (
+                  <span key={s} title="Complet" className="font-head rounded-lg px-3 py-2"
+                    style={{ fontSize: 12.5, fontWeight: 600, color: '#B8A893', background: '#F4EDE0', border: '1px dashed rgba(58,42,26,.16)', textDecoration: 'line-through', cursor: 'not-allowed' }}>{s}</span>
+                ) : (
+                  <button key={s} onClick={() => setTime(s)} className="font-head rounded-lg px-3 py-2 transition-all"
+                    style={{ fontSize: 12.5, fontWeight: 600, background: time === s ? OLIVE : '#fff', color: time === s ? '#fff' : '#6A5746', border: time === s ? 'none' : '1px solid rgba(58,42,26,.12)' }}>{s}</button>
+                ))}
             </div>
 
             <button onClick={() => onReserve({ time: time || r.slots[0], party })}

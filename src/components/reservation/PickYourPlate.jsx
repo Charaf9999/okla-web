@@ -6,18 +6,18 @@ const OLIVE = '#6F8F45', OLIVE_D = '#5E7A39', CACAO = '#3A2A1A'
 // Catégories de plats (façon « Pick your plate » de TheFork).
 // `kw` : mots-clés cherchés dans le nom, la cuisine, les tags et la carte du restaurant.
 export const PLATES = [
-  { id: 'tajine', label: 'Tajine', emoji: '🍲', img: '/images/plates/tajine.jpg', kw: ['tajine'] },
-  { id: 'couscous', label: 'Couscous', emoji: '🥘', img: '/images/plates/couscous.jpg', kw: ['couscous'] },
-  { id: 'pastilla', label: 'Pastilla', emoji: '🥧', img: '/images/plates/pastilla.jpg', kw: ['pastilla'] },
-  { id: 'poisson', label: 'Poisson & fruits de mer', emoji: '🐟', img: '/images/plates/poisson.jpg', kw: ['poisson', 'fruits de mer', 'crevette', 'gambas', 'thon', 'bar grillé'] },
-  { id: 'harira', label: 'Harira & soupes', emoji: '🍜', img: '/images/plates/harira.jpg', kw: ['harira', 'soupe'] },
-  { id: 'briouates', label: 'Briouates', emoji: '🥟', img: '/images/plates/briouates.jpg', kw: ['briouate'] },
+  { id: 'tajine', label: 'Tajine', emoji: '🍲', img: '/images/plates/tajine.jpeg', kw: ['tajine'] },
+  { id: 'couscous', label: 'Couscous', emoji: '🥘', img: '/images/plates/couscous.jpeg', kw: ['couscous'] },
+  { id: 'pastilla', label: 'Pastilla', emoji: '🥧', img: '/images/plates/pastilla.jpeg', kw: ['pastilla'] },
+  { id: 'poisson', label: 'Poisson & fruits de mer', emoji: '🐟', img: '/images/plates/poisson.jpeg', kw: ['poisson', 'fruits de mer', 'crevette', 'gambas', 'thon', 'bar grillé'] },
+  { id: 'harira', label: 'Harira & soupes', emoji: '🍜', img: '/images/plates/harira.jpeg', kw: ['harira', 'soupe'] },
+  { id: 'briouates', label: 'Briouates', emoji: '🥟', img: '/images/plates/briouates.jpeg', kw: ['briouate'] },
 ]
 
 export function matchesPlate(r, plateId) {
   const p = PLATES.find(x => x.id === plateId)
   if (!p) return true
-  const hay = [r.name, r.cuisine, ...(r.tags || []), ...(r.menu || []).map(([n]) => n)].join(' ').toLowerCase()
+  const hay = [r.name, r.cuisine, ...(r.tags || []), ...(r.menu || []).map(m => m.name)].join(' ').toLowerCase()
   return p.kw.some(k => hay.includes(k))
 }
 
